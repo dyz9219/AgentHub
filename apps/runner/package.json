@@ -1,0 +1,21 @@
+{
+  "name": "@agenthub/runner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "agenthub-runner": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "node --import tsx --test test/**/*.test.ts"
+  },
+  "dependencies": {
+    "@agenthub/shared": "*",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "zod": "^4.1.5"
+  }
+}

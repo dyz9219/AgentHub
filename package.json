@@ -1,0 +1,28 @@
+{
+  "name": "agenthub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "build": "npm run build -w @agenthub/shared && npm run build -w @agenthub/hub && npm run build -w @agenthub/runner",
+    "test": "npm run test -w @agenthub/shared && npm run test -w @agenthub/hub && npm run test -w @agenthub/runner",
+    "smoke": "node scripts/smoke.mjs",
+    "seed:evaluation": "node scripts/seed-evaluation.mjs",
+    "dev:hub": "npm run dev -w @agenthub/hub",
+    "dev:runner": "npm run dev -w @agenthub/runner",
+    "start:hub": "npm run start -w @agenthub/hub",
+    "start:runner": "npm run start -w @agenthub/runner"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

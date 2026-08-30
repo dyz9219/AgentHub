@@ -1,0 +1,42 @@
+<evaluation>
+  <qa_pair>
+    <question>In the atlas project, identify the role that rejected the first user-profile response shape because its naming convention did not match the UI. Answer with the role only.</question>
+    <answer>frontend</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>For the atlas naming-convention objection, trace the sender back to its registered Agent. Which provider hosts that Agent? Answer codex or claude.</question>
+    <answer>claude</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Find the atlas specialist who confirmed that changing the serialized field would not affect ranking inputs. What local permission mode is registered for that specialist?</question>
+    <answer>full_auto</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>In atlas, runtime evidence later showed that the old response spelling was still present. Which role received that blocker and therefore owned the correction? Answer with the role.</question>
+    <answer>backend</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>After the atlas runtime blocker was handled, the responsible Agent reported a test result to its peer. How many tests passed? Answer with a number only.</question>
+    <answer>18</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>In the beacon project, which role raised the concern that retrying a request could create duplicate jobs? Answer with the role only.</question>
+    <answer>frontend</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>For the beacon duplicate-job concern, inspect the recipient Agent that was expected to revise the contract. Which provider would Runner need to resume?</question>
+    <answer>claude</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>In the completed atlas contract exchange, both implementation roles approved the same revised response property. Return the exact property name.</question>
+    <answer>displayName</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Compare the registered frontend and backend providers in both seeded projects. Which project has its frontend on codex and backend on claude? Answer with the project key.</question>
+    <answer>beacon</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Locate the Agent that both received the duplicate-job objection and is allowed to modify within its local policy without a per-write prompt. Return its display name.</question>
+    <answer>Beacon Backend</answer>
+  </qa_pair>
+</evaluation>
