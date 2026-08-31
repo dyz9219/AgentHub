@@ -40,38 +40,81 @@ Runner 需要像 CLI 一样在每台开发机安装一次，但它不替代 Code
 
 尚未实现：通过 Codex App Server/Claude CLI 自动唤醒已绑定 Session、代码写入审批 UI、截图上传、系统服务安装器和两台真实机器联调。消息中的 `attachmentIds` 已预留，但附件 API 不能视为完成。
 
-## 本机快速启动
+## 快速体验
 
-要求 Node.js 22.5 或更高版本。
+当前版本还没有发布 npm 安装包，每台参与机器先从源码运行。需要：
+
+- Git、Node.js 22.5 或更高版本。
+- 已安装并登录 Codex CLI/Codex 或 Claude Code，至少具备其中一个。
+- 两机测试时，各机器能通过局域网访问 Hub 的 TCP 4310 端口。
+
+以下示例使用 PowerShell；macOS/Linux 将 `$env:NAME = "value"` 换成 `export NAME="value"` 即可。
+
+### 1. 每台机器克隆并构建
 
 ```powershell
-cd E:\workspace\AI\AgentHub
-npm install
+git clone https://github.com/dyz9219/AgentHub.git
+cd AgentHub
+npm ci
 npm run build
-$env:AGENTHUB_TOKEN = "替换为足够长的随机字符串"
+$runner = (Resolve-Path ".\apps\runner\dist\index.js").Path
+```
+
+更新代码后重新执行 `git pull`、`npm ci` 和 `npm run build`。
+
+### 2. 在一台机器启动 Hub
+
+仅在同一台机器体验：
+
+```powershell
+$env:AGENTHUB_TOKEN = "替换为至少 32 字节的随机字符串"
 npm run start:hub
 ```
 
-状态页：`http://127.0.0.1:4310/`。
-
-打开另一个 PowerShell，初始化并启动本机 Runner：
+局域网共享时，先取得 Hub 机器的局域网 IP，例如 `192.168.1.20`，再启动：
 
 ```powershell
-$env:AGENTHUB_TOKEN = "与 Hub 相同的字符串"
-node E:\workspace\AI\AgentHub\apps\runner\dist\index.js init --hub http://127.0.0.1:4310
-node E:\workspace\AI\AgentHub\apps\runner\dist\index.js daemon
+$env:AGENTHUB_HOST = "0.0.0.0"
+$env:AGENTHUB_ALLOWED_HOSTS = "192.168.1.20,127.0.0.1,localhost"
+$env:AGENTHUB_TOKEN = "替换为至少 32 字节的随机字符串"
+npm run start:hub
 ```
+
+可用 `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` 生成 Token。通过安全渠道把同一个 Token 交给参与者，不要提交到 Git。只在受信局域网中开放 4310 端口，不要直接暴露到互联网。
+
+状态页地址为 `http://<Hub-IP>:4310/`，单机体验使用 `http://127.0.0.1:4310/`。
+
+### 3. 在每台开发机连接 Runner
+
+Runner、Codex/Claude 和 Hub 必须读取相同的 `AGENTHUB_TOKEN`。先在开发机设置 Token；若要让重启后的 Codex/Claude 也能读取它，Windows 可以写入当前用户环境变量，然后重启 Agent 客户端：
+
+```powershell
+[Environment]::SetEnvironmentVariable("AGENTHUB_TOKEN", "与 Hub 相同的字符串", "User")
+$env:AGENTHUB_TOKEN = "与 Hub 相同的字符串"
+```
+
+初始化并启动 Runner：
+
+```powershell
+node $runner init --hub http://192.168.1.20:4310 --name frontend-pc
+node $runner daemon
+```
+
+将示例 IP 和机器名换成实际值；单机体验使用 `127.0.0.1`。当前版本没有系统服务安装器，因此要保持 daemon 终端运行。
 
 `init` 默认把 `agenthub-register` Skill 安装到当前用户的 Codex 与 Claude Skill 目录；若不需要可传 `--skip-skills`。它不会覆盖内容不同的已有 Skill，除非用户审查后显式传 `--force-skills`。
 
-将本地 MCP bridge 配给 Codex 和 Claude：
+### 4. 配置 Codex 或 Claude 的本地 MCP
+
+在每台开发机的 AgentHub 仓库目录执行；只需要配置自己使用的客户端：
 
 ```powershell
-codex mcp add agenthub -- node E:\workspace\AI\AgentHub\apps\runner\dist\index.js mcp
-claude mcp add -s user agenthub -- node E:\workspace\AI\AgentHub\apps\runner\dist\index.js mcp
+$runner = (Resolve-Path ".\apps\runner\dist\index.js").Path
+codex mcp add agenthub -- node $runner mcp
+claude mcp add -s user agenthub -- node $runner mcp
 ```
 
-配置完成后重开对应 Agent task，让它重新加载 MCP 工具。
+重启对应 Agent 客户端，并从真实项目目录打开一个新 task，让它加载 MCP 工具和注册 Skill。
 
 ## 用户只说一句话注册
 
@@ -107,25 +150,43 @@ Agent 在内部自动执行：
 2. 本机执行：
 
    ```powershell
-   node E:\workspace\AI\AgentHub\apps\runner\dist\index.js status
+   cd AgentHub
+   node .\apps\runner\dist\index.js status
    ```
 
 3. 打开 Hub 页面，看 Runner 心跳、Agent 角色、Session binding 和权限模式。
 
-只有同时满足 `Hub connected + daemon running + session bound`，才算可自动收消息；后续加入 provider 唤醒适配器后，页面还会显示 `provider ready`。
+只有同时满足 `Hub connected + daemon running + session bound`，Runner 才能异步接收并缓存发给该 Session 的消息；当前仍需用户在 Agent task 中触发读取。后续加入 provider 唤醒适配器后，页面还会显示 `provider ready`。
 
-## 局域网启动
+## 前后端双 Agent 演示
 
-Hub 所在机器显式配置监听地址、Token 和允许的 Host：
+两台机器使用相同 `projectKey`、不同角色注册。先在后端项目 task 中说：
 
-```powershell
-$env:AGENTHUB_HOST = "0.0.0.0"
-$env:AGENTHUB_ALLOWED_HOSTS = "172.16.31.100,agenthub.local"
-$env:AGENTHUB_TOKEN = "替换为足够长的随机字符串"
-npm run start:hub
+```text
+把当前项目以 backend 角色注册到 AgentHub，项目名为 user-profile，修改代码前需要我确认。
 ```
 
-其他机器把 Runner 的 `--hub` 改成 Hub 的局域网地址。不要把 Codex App Server 或 Claude 端口暴露到局域网；Runner 只主动连接 Hub。
+再在前端项目 task 中说：
+
+```text
+把当前项目以 frontend 角色注册到 AgentHub，项目名为 user-profile，修改代码前需要我确认。
+```
+
+后端提出接口方案：
+
+```text
+通过 AgentHub 把登录接口方案发给 frontend，并要求对方确认字段和错误码。
+```
+
+当前 `0.1.0` 尚未自动唤醒休眠的 Codex/Claude task，所以前端用户需要在已注册 task 中说：
+
+```text
+读取 AgentHub 收件箱，审查 backend 的接口方案；有异议就回复，没有异议就 approve。
+```
+
+后端同样手动读取收件箱、修改方案并回复。双方 approve 后，各自 Agent 仍遵守本机的 `confirm_write` 或 `full_auto` 权限策略。这样可以验证消息、Session 精确绑定、协商和阻塞反馈闭环，但暂时不是无人值守执行。
+
+当前只支持文字消息。`attachmentIds` 只是协议预留，截图上传和转发尚未实现。
 
 ## 验证
 
